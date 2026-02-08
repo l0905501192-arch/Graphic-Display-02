@@ -16,8 +16,6 @@
             --accent-color: #d4a373;
             --text-color: #4a4a4a;
             --font-size-base: 16px;
-            /* 橫向比例設定 */
-            --card-width: 450px; 
             --card-aspect: 16 / 10; 
         }
     </style>
@@ -29,7 +27,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- 控制面板 --- */
         .admin-panel {
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             padding: 15px 25px; border-radius: 40px;
@@ -46,14 +43,12 @@
         .btn-main { background: var(--accent-color); color: white; }
         .btn-share { background: #333; color: white; }
 
-        /* --- 橫向畫廊佈局 --- */
         .gallery { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(min(100%, 450px), 1fr)); 
             gap: 40px; width: 100%; max-width: 1400px; 
         }
         
-        /* --- 卡片結構：自適應橫向 --- */
         .card-container { 
             width: 100%;
             aspect-ratio: var(--card-aspect); 
@@ -62,7 +57,7 @@
         }
         .card-inner { 
             position: relative; width: 100%; height: 100%; 
-            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1); 
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); 
             transform-style: preserve-3d; border-radius: 20px; 
             will-change: transform; 
         }
@@ -76,11 +71,10 @@
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* 重點修正：使用 contain 確保不裁切圖片 */
         .card-front img { 
             width: 100%; height: 100%; 
-            object-fit: contain; /* 完整顯示全圖，不裁切 */
-            background: var(--card-bg); /* 背景色與卡片一致 */
+            object-fit: contain; 
+            background: var(--card-bg); 
             pointer-events: none; 
         }
 
@@ -109,7 +103,6 @@
         #hint { position: fixed; bottom: 20px; font-size: 10px; color: #ccc; opacity: 0; transition: 0.3s;}
         body:hover #hint { opacity: 1; }
 
-        /* 手機板適應 */
         @media (max-width: 600px) {
             body { padding: 20px; }
             .card-container { aspect-ratio: 16 / 11; }
@@ -123,7 +116,7 @@
         <div class="control-item">卡片<input type="color" id="p-card" onchange="updateUI()"></div>
         <div class="control-item">文字<input type="color" id="p-text" onchange="updateUI()"></div>
         <div class="control-item">強調<input type="color" id="p-accent" onchange="updateUI()"></div>
-        <div class="control-item">大小<input type="range" id="p-size" min="12" max="24" value="16" oninput="updateUI()"></div>
+        <div class="control-item">字體<input type="range" id="p-size" min="12" max="24" value="16" oninput="updateUI()"></div>
         <div class="divider"></div>
         <button class="btn-main" onclick="toggleEdit()" id="edit-btn">✏️ 編輯模式</button>
         <button onclick="addCard()">＋ 新增</button>
@@ -152,7 +145,7 @@
                 } catch(e) { console.error("Load Error"); }
             } else {
                 if (isEmbedded) document.body.classList.add('viewer-mode');
-                const local = localStorage.getItem('Gallery_V60_Landscape');
+                const local = localStorage.getItem('Gallery_V61_Fix');
                 if (local) siteData = JSON.parse(local);
             }
             syncControls();
@@ -162,8 +155,13 @@
 
         function toggleUI() { document.body.classList.toggle('viewer-mode'); }
 
+        // --- 核心修正：翻轉邏輯 ---
         function handleCardClick(event) {
-            if (isEditing || event.target.closest('.edit-tools') || event.target.closest('.scroll-content') || event.target.closest('.title')) return;
+            // 如果是編輯模式，點擊文字或工具列不翻轉（為了讓你可以編輯）
+            if (isEditing && (event.target.closest('.edit-tools') || event.target.closest('.scroll-content') || event.target.closest('.title'))) {
+                return;
+            }
+            // 觀賞模式（isEditing 為 false）下，點擊任何地方都會切換翻轉
             this.classList.toggle('is-flipped');
         }
 
@@ -197,7 +195,7 @@
             siteData.cards.forEach((c, i) => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = `card-container ${isEditing ? 'editing' : ''}`;
-                cardDiv.onclick = handleCardClick;
+                cardDiv.onclick = function(e) { handleCardClick.call(this, e); };
                 cardDiv.innerHTML = `
                     <div class="card-inner">
                         <div class="card-front"><img src="${c.img}" referrerpolicy="no-referrer" onerror="this.src='https://via.placeholder.com/450x300?text=Image+URL+Error';"></div>
@@ -230,7 +228,7 @@
             document.getElementById('edit-btn').innerText = isEditing ? "✅ 完成" : "✏️ 編輯模式";
             if (!isEditing) {
                 document.querySelectorAll('.card-container').forEach(c => c.classList.remove('is-flipped'));
-                localStorage.setItem('Gallery_V60_Landscape', JSON.stringify(siteData));
+                localStorage.setItem('Gallery_V61_Fix', JSON.stringify(siteData));
             }
             render();
         }
@@ -252,4 +250,3 @@
     </script>
 </body>
 </html>
-
